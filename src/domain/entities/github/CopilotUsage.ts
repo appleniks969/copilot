@@ -60,6 +60,7 @@ export interface CopilotOrgUsage {
 export interface CopilotTeamUsage {
   team_id: number;
   team_name: string;
+  team_slug: string; // Added team_slug field
   total_members_with_access: number;
   active_members: CopilotUser[];
   inactive_members: CopilotUser[];

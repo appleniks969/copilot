@@ -10,17 +10,17 @@ const QuerySchema = z.object({
 
 interface Params {
   params: {
-    id: string;
+    slug: string;
   };
 }
 
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    const teamId = parseInt(params.id);
+    const { slug } = params;
     
-    if (isNaN(teamId)) {
+    if (!slug) {
       return NextResponse.json(
-        { error: 'Invalid team ID' },
+        { error: 'Team slug is required' },
         { status: 400 }
       );
     }
@@ -42,10 +42,10 @@ export async function GET(req: NextRequest, { params }: Params) {
         }
       : undefined;
     
-    console.log(`Fetching Copilot usage for team ${teamId} with date range:`, dateRange);
+    console.log(`Fetching Copilot usage for team ${slug} with date range:`, dateRange);
     
     // Get Copilot usage data
-    const usageData = await gitHubCopilotService.getTeamCopilotUsage(teamId, dateRange);
+    const usageData = await gitHubCopilotService.getTeamCopilotUsage(slug, dateRange);
     
     // Calculate additional metrics
     const metrics = gitHubCopilotService.calculateTeamMetrics(usageData);
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       metrics
     });
   } catch (error) {
-    console.error(`Error fetching Copilot usage for team ${params.id}:`, error);
+    console.error(`Error fetching Copilot usage for team ${params.slug}:`, error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

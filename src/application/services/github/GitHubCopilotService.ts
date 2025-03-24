@@ -7,29 +7,22 @@ export class GitHubCopilotService {
   /**
    * Get Copilot usage data for an organization
    */
-  async getOrganizationCopilotUsage(orgName: string, dateRange?: DateRangeFilter): Promise<CopilotOrgUsage> {
+  async getOrganizationCopilotUsage(orgName?: string, dateRange?: DateRangeFilter): Promise<CopilotOrgUsage> {
     return this.gitHubRepository.getOrganizationCopilotUsage(orgName, dateRange);
   }
 
   /**
    * Get Copilot usage data for a team
    */
-  async getTeamCopilotUsage(teamId: number, dateRange?: DateRangeFilter): Promise<CopilotTeamUsage> {
-    return this.gitHubRepository.getTeamCopilotUsage(teamId, dateRange);
+  async getTeamCopilotUsage(teamSlug: string, dateRange?: DateRangeFilter): Promise<CopilotTeamUsage> {
+    return this.gitHubRepository.getTeamCopilotUsage(teamSlug, dateRange);
   }
 
   /**
-   * Get a list of organizations the authenticated user has access to
+   * Get a list of teams in the organization
    */
-  async getUserOrganizations() {
-    return this.gitHubRepository.getUserOrganizations();
-  }
-
-  /**
-   * Get a list of teams in the specified organization
-   */
-  async getOrganizationTeams(orgName: string) {
-    return this.gitHubRepository.getOrganizationTeams(orgName);
+  async getOrganizationTeams() {
+    return this.gitHubRepository.getOrganizationTeams();
   }
 
   /**

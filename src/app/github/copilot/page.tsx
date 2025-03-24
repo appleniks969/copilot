@@ -9,10 +9,10 @@ import CopilotMetricsCharts from '@/presentation/components/github/copilot/Copil
 import CopilotUserActivity from '@/presentation/components/github/copilot/CopilotUserActivity';
 
 export default function CopilotDashboardPage() {
-  // State for org/team selection
-  const [selectedOrg, setSelectedOrg] = useState<string>('');
-  const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>(undefined);
-  const [viewType, setViewType] = useState<'organization' | 'team'>('organization');
+  // State for team selection
+  const [selectedTeamSlug, setSelectedTeamSlug] = useState<string>(
+    process.env.NEXT_PUBLIC_GITHUB_DEFAULT_TEAM_SLUG || ''
+  );
   
   // State for date range
   const [dateRange, setDateRange] = useState({
@@ -23,53 +23,14 @@ export default function CopilotDashboardPage() {
   // State for data
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [orgData, setOrgData] = useState<CopilotOrgUsage | null>(null);
   const [teamData, setTeamData] = useState<CopilotTeamUsage | null>(null);
   const [metrics, setMetrics] = useState<any | null>(null);
   
-  // Fetch organization data
-  useEffect(() => {
-    if (!selectedOrg) return;
-    
-    const fetchOrgData = async () => {
-      if (viewType !== 'organization') return;
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const params = new URLSearchParams({
-          start_time: dateRange.startDate.toISOString(),
-          end_time: dateRange.endDate.toISOString()
-        });
-        
-        const response = await fetch(`/api/github/copilot/org/${selectedOrg}?${params.toString()}`);
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch organization data');
-        }
-        
-        setOrgData(data.usageData);
-        setMetrics(data.metrics);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-        console.error('Error fetching organization data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchOrgData();
-  }, [selectedOrg, dateRange, viewType]);
-  
   // Fetch team data
   useEffect(() => {
-    if (!selectedTeamId) return;
+    if (!selectedTeamSlug) return;
     
     const fetchTeamData = async () => {
-      if (viewType !== 'team') return;
-      
       setLoading(true);
       setError(null);
       
@@ -79,12 +40,14 @@ export default function CopilotDashboardPage() {
           end_time: dateRange.endDate.toISOString()
         });
         
-        const response = await fetch(`/api/github/copilot/team/${selectedTeamId}?${params.toString()}`);
-        const data = await response.json();
+        const response = await fetch(`/api/github/copilot/team/${selectedTeamSlug}?${params.toString()}`);
         
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch team data');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch team data');
         }
+        
+        const data = await response.json();
         
         setTeamData(data.usageData);
         setMetrics(data.metrics);
@@ -97,22 +60,11 @@ export default function CopilotDashboardPage() {
     };
     
     fetchTeamData();
-  }, [selectedTeamId, dateRange, viewType]);
-
-  // Handle org change
-  const handleOrgChange = (org: string) => {
-    setSelectedOrg(org);
-    setViewType('organization');
-  };
+  }, [selectedTeamSlug, dateRange]);
   
   // Handle team change
-  const handleTeamChange = (teamId: number) => {
-    setSelectedTeamId(teamId);
-  };
-  
-  // Handle view type change
-  const handleViewTypeChange = (type: 'organization' | 'team') => {
-    setViewType(type);
+  const handleTeamChange = (teamSlug: string) => {
+    setSelectedTeamSlug(teamSlug);
   };
   
   // Handle date range change
@@ -120,51 +72,22 @@ export default function CopilotDashboardPage() {
     setDateRange(range);
   };
   
-  // Determine which data to use based on view type
-  const currentData = viewType === 'organization' ? orgData : teamData;
-  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">GitHub Copilot Usage Dashboard</h1>
+        <h1 className="text-2xl font-bold">GitHub Copilot Team Dashboard</h1>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CopilotSelector
-          onOrgChange={handleOrgChange}
           onTeamChange={handleTeamChange}
-          selectedOrg={selectedOrg}
-          selectedTeamId={selectedTeamId}
+          selectedTeamSlug={selectedTeamSlug}
         />
         
         <DateRangePicker
           dateRange={dateRange}
           onChange={handleDateRangeChange}
         />
-      </div>
-      
-      <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow p-2">
-        <button
-          onClick={() => handleViewTypeChange('organization')}
-          className={`flex-1 py-2 px-4 text-center text-sm font-medium rounded-md ${
-            viewType === 'organization'
-              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-              : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
-          Organization View
-        </button>
-        <button
-          onClick={() => handleViewTypeChange('team')}
-          className={`flex-1 py-2 px-4 text-center text-sm font-medium rounded-md ${
-            viewType === 'team'
-              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-              : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-          disabled={!selectedTeamId}
-        >
-          Team View
-        </button>
       </div>
       
       {loading && (
@@ -190,7 +113,7 @@ export default function CopilotDashboardPage() {
           <p className="mt-2 text-gray-700 dark:text-gray-300">{error}</p>
           <div className="mt-4">
             <button
-              onClick={() => viewType === 'organization' ? handleOrgChange(selectedOrg) : handleTeamChange(selectedTeamId!)}
+              onClick={() => handleTeamChange(selectedTeamSlug)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md shadow-sm"
             >
               Retry
@@ -199,23 +122,23 @@ export default function CopilotDashboardPage() {
         </div>
       )}
       
-      {!loading && !error && currentData && metrics && (
+      {!loading && !error && teamData && metrics && (
         <div className="space-y-6">
           <CopilotUsageOverview 
-            data={currentData as any} 
+            data={teamData} 
             metrics={metrics} 
-            type={viewType}
+            type="team"
           />
           
           <CopilotMetricsCharts 
-            data={currentData as any} 
+            data={teamData} 
             metrics={metrics}
           />
           
           <CopilotUserActivity
-            activeUsers={currentData.active_users || currentData.active_members}
-            inactiveUsers={currentData.inactive_users || currentData.inactive_members}
-            type={viewType}
+            activeUsers={teamData.active_members}
+            inactiveUsers={teamData.inactive_members}
+            type="team"
           />
         </div>
       )}

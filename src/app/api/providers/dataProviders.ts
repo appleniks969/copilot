@@ -2,27 +2,38 @@ import { GitHubApiRepository } from '@/infrastructure/repositories/github/GitHub
 import { MockGitHubRepository } from '@/infrastructure/repositories/github/MockGitHubRepository';
 import { GitHubCopilotService } from '@/application/services/github/GitHubCopilotService';
 
-// Determine whether to use mock data or real API
-const useMockApi = process.env.NEXT_PUBLIC_ENABLE_MOCK_API === 'true';
+// Get environment variables
+const apiToken = process.env.GITHUB_API_TOKEN;
+const apiUrl = process.env.GITHUB_API_URL || 'https://api.github.com';
+const apiVersion = process.env.GITHUB_API_VERSION || '2022-11-28';
+const organization = process.env.GITHUB_ORGANIZATION;
+
+// Determine whether to use mock data - useful for development and testing
+const useMockData = process.env.USE_MOCK_DATA === 'true';
+
+// Log the current configuration
+console.log(`API Configuration:
+  - Using mock data: ${useMockData ? 'YES' : 'NO'}
+  - Organization: ${organization || 'Not set'}
+  - API URL: ${apiUrl}
+  - API Version: ${apiVersion}
+  - Token set: ${apiToken ? 'YES' : 'NO'}
+`);
 
 // Initialize GitHub repository
 let gitHubRepo;
-if (useMockApi) {
-  console.log('Using mock GitHub repository');
+
+if (useMockData || !apiToken || !organization) {
+  console.log('Using mock GitHub repository for data');
   gitHubRepo = new MockGitHubRepository();
 } else {
-  console.log('Using real GitHub API repository');
-  
-  // Get the API token from environment variables
-  const apiToken = process.env.GITHUB_API_TOKEN;
-  
-  if (!apiToken) {
-    console.error('GitHub API token is not set. Set GITHUB_API_TOKEN in .env.local file.');
-    // Fallback to mock repository if token is not available
-    gitHubRepo = new MockGitHubRepository();
-  } else {
-    gitHubRepo = new GitHubApiRepository(apiToken);
-  }
+  console.log('Using real GitHub API repository for data');
+  gitHubRepo = new GitHubApiRepository(
+    apiToken, 
+    apiUrl, 
+    apiVersion, 
+    organization
+  );
 }
 
 // Initialize GitHub Copilot service with the repository

@@ -7,10 +7,10 @@ import CopilotSelector from '@/presentation/components/github/copilot/CopilotSel
 import DateRangePicker from '@/presentation/components/github/copilot/DateRangePicker';
 
 export default function CopilotRepositoriesPage() {
-  // State for org/team selection
-  const [selectedOrg, setSelectedOrg] = useState<string>('');
-  const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>(undefined);
-  const [viewType, setViewType] = useState<'organization' | 'team'>('organization');
+  // State for team selection
+  const [selectedTeamSlug, setSelectedTeamSlug] = useState<string>(
+    process.env.NEXT_PUBLIC_GITHUB_DEFAULT_TEAM_SLUG || ''
+  );
   
   // State for date range
   const [dateRange, setDateRange] = useState({
@@ -25,10 +25,9 @@ export default function CopilotRepositoriesPage() {
   
   // Fetch data
   useEffect(() => {
+    if (!selectedTeamSlug) return;
+    
     const fetchData = async () => {
-      if (!selectedOrg && viewType === 'organization') return;
-      if (!selectedTeamId && viewType === 'team') return;
-      
       setLoading(true);
       setError(null);
       
@@ -38,16 +37,14 @@ export default function CopilotRepositoriesPage() {
           end_time: dateRange.endDate.toISOString()
         });
         
-        const endpoint = viewType === 'organization'
-          ? `/api/github/copilot/org/${selectedOrg}?${params.toString()}`
-          : `/api/github/copilot/team/${selectedTeamId}?${params.toString()}`;
-        
-        const response = await fetch(endpoint);
-        const data = await response.json();
+        const response = await fetch(`/api/github/copilot/team/${selectedTeamSlug}?${params.toString()}`);
         
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch data');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch data');
         }
+        
+        const data = await response.json();
         
         // Set repository data
         setRepositories(data.usageData.aggregated.repositories || []);
@@ -60,22 +57,11 @@ export default function CopilotRepositoriesPage() {
     };
     
     fetchData();
-  }, [selectedOrg, selectedTeamId, viewType, dateRange]);
-  
-  // Handle org change
-  const handleOrgChange = (org: string) => {
-    setSelectedOrg(org);
-    setViewType('organization');
-  };
+  }, [selectedTeamSlug, dateRange]);
   
   // Handle team change
-  const handleTeamChange = (teamId: number) => {
-    setSelectedTeamId(teamId);
-  };
-  
-  // Handle view type change
-  const handleViewTypeChange = (type: 'organization' | 'team') => {
-    setViewType(type);
+  const handleTeamChange = (teamSlug: string) => {
+    setSelectedTeamSlug(teamSlug);
   };
   
   // Handle date range change
@@ -153,40 +139,14 @@ export default function CopilotRepositoriesPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CopilotSelector
-          onOrgChange={handleOrgChange}
           onTeamChange={handleTeamChange}
-          selectedOrg={selectedOrg}
-          selectedTeamId={selectedTeamId}
+          selectedTeamSlug={selectedTeamSlug}
         />
         
         <DateRangePicker
           dateRange={dateRange}
           onChange={handleDateRangeChange}
         />
-      </div>
-      
-      <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow p-2">
-        <button
-          onClick={() => handleViewTypeChange('organization')}
-          className={`flex-1 py-2 px-4 text-center text-sm font-medium rounded-md ${
-            viewType === 'organization'
-              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-              : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
-          Organization View
-        </button>
-        <button
-          onClick={() => handleViewTypeChange('team')}
-          className={`flex-1 py-2 px-4 text-center text-sm font-medium rounded-md ${
-            viewType === 'team'
-              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-              : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-          disabled={!selectedTeamId}
-        >
-          Team View
-        </button>
       </div>
       
       {loading && (
@@ -392,7 +352,7 @@ export default function CopilotRepositoriesPage() {
                   ) : (
                     <tr>
                       <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No repository data available. Please select an organization or team.
+                        No repository data available. Please select a team.
                       </td>
                     </tr>
                   )}

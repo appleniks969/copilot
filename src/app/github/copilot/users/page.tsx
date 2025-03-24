@@ -7,10 +7,10 @@ import CopilotSelector from '@/presentation/components/github/copilot/CopilotSel
 import DateRangePicker from '@/presentation/components/github/copilot/DateRangePicker';
 
 export default function CopilotUsersPage() {
-  // State for org/team selection
-  const [selectedOrg, setSelectedOrg] = useState<string>('');
-  const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>(undefined);
-  const [viewType, setViewType] = useState<'organization' | 'team'>('organization');
+  // State for team selection
+  const [selectedTeamSlug, setSelectedTeamSlug] = useState<string>(
+    process.env.NEXT_PUBLIC_GITHUB_DEFAULT_TEAM_SLUG || ''
+  );
   
   // State for date range
   const [dateRange, setDateRange] = useState({
@@ -27,10 +27,9 @@ export default function CopilotUsersPage() {
   
   // Fetch data
   useEffect(() => {
+    if (!selectedTeamSlug) return;
+    
     const fetchData = async () => {
-      if (!selectedOrg && viewType === 'organization') return;
-      if (!selectedTeamId && viewType === 'team') return;
-      
       setLoading(true);
       setError(null);
       
@@ -40,27 +39,19 @@ export default function CopilotUsersPage() {
           end_time: dateRange.endDate.toISOString()
         });
         
-        const endpoint = viewType === 'organization'
-          ? `/api/github/copilot/org/${selectedOrg}?${params.toString()}`
-          : `/api/github/copilot/team/${selectedTeamId}?${params.toString()}`;
-        
-        const response = await fetch(endpoint);
-        const data = await response.json();
+        const response = await fetch(`/api/github/copilot/team/${selectedTeamSlug}?${params.toString()}`);
         
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch data');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch data');
         }
         
-        // Set active users based on view type
-        if (viewType === 'organization') {
-          setActiveUsers(data.usageData.active_users || []);
-          setInactiveUsers(data.usageData.inactive_users || []);
-          setUserStats(data.usageData.users || []);
-        } else {
-          setActiveUsers(data.usageData.active_members || []);
-          setInactiveUsers(data.usageData.inactive_members || []);
-          setUserStats(data.usageData.users || []);
-        }
+        const data = await response.json();
+        
+        // Set active users
+        setActiveUsers(data.usageData.active_members || []);
+        setInactiveUsers(data.usageData.inactive_members || []);
+        setUserStats(data.usageData.users || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
         console.error('Error fetching data:', err);
@@ -70,22 +61,11 @@ export default function CopilotUsersPage() {
     };
     
     fetchData();
-  }, [selectedOrg, selectedTeamId, viewType, dateRange]);
-  
-  // Handle org change
-  const handleOrgChange = (org: string) => {
-    setSelectedOrg(org);
-    setViewType('organization');
-  };
+  }, [selectedTeamSlug, dateRange]);
   
   // Handle team change
-  const handleTeamChange = (teamId: number) => {
-    setSelectedTeamId(teamId);
-  };
-  
-  // Handle view type change
-  const handleViewTypeChange = (type: 'organization' | 'team') => {
-    setViewType(type);
+  const handleTeamChange = (teamSlug: string) => {
+    setSelectedTeamSlug(teamSlug);
   };
   
   // Handle date range change
@@ -128,7 +108,7 @@ export default function CopilotUsersPage() {
         <div>
           <h1 className="text-2xl font-bold">GitHub Copilot Users</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            View user activity and adoption across your organization
+            View user activity and adoption across your team
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -143,40 +123,14 @@ export default function CopilotUsersPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CopilotSelector
-          onOrgChange={handleOrgChange}
           onTeamChange={handleTeamChange}
-          selectedOrg={selectedOrg}
-          selectedTeamId={selectedTeamId}
+          selectedTeamSlug={selectedTeamSlug}
         />
         
         <DateRangePicker
           dateRange={dateRange}
           onChange={handleDateRangeChange}
         />
-      </div>
-      
-      <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow p-2">
-        <button
-          onClick={() => handleViewTypeChange('organization')}
-          className={`flex-1 py-2 px-4 text-center text-sm font-medium rounded-md ${
-            viewType === 'organization'
-              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-              : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
-          Organization View
-        </button>
-        <button
-          onClick={() => handleViewTypeChange('team')}
-          className={`flex-1 py-2 px-4 text-center text-sm font-medium rounded-md ${
-            viewType === 'team'
-              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
-              : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-          disabled={!selectedTeamId}
-        >
-          Team View
-        </button>
       </div>
       
       {loading && (
@@ -347,7 +301,7 @@ export default function CopilotUsersPage() {
                   {activeUsers.length === 0 && inactiveUsers.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No user data available. Please select an organization or team.
+                        No user data available. Please select a team.
                       </td>
                     </tr>
                   )}

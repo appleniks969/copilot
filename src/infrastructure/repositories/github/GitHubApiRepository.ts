@@ -4,19 +4,22 @@ import { DateRangeFilter, GitHubRepository } from '../../../domain/repositories/
 
 export class GitHubApiRepository implements GitHubRepository {
   private client: AxiosInstance;
+  private organization: string;
   
-  constructor(apiToken: string) {
+  constructor(apiToken: string, apiUrl: string, apiVersion: string, organization: string) {
+    this.organization = organization;
+    
     this.client = axios.create({
-      baseURL: 'https://api.github.com',
+      baseURL: apiUrl,
       headers: {
         Authorization: `Bearer ${apiToken}`,
         Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
+        'X-GitHub-Api-Version': apiVersion,
       },
     });
   }
   
-  async getOrganizationCopilotUsage(orgName: string, dateRange?: DateRangeFilter): Promise<CopilotOrgUsage> {
+  async getOrganizationCopilotUsage(orgName: string = this.organization, dateRange?: DateRangeFilter): Promise<CopilotOrgUsage> {
     let url = `/orgs/${orgName}/copilot/usage`;
     
     // Add date range parameters if provided
@@ -31,16 +34,18 @@ export class GitHubApiRepository implements GitHubRepository {
     }
     
     try {
+      console.log(`Fetching Copilot usage for org: ${orgName}`);
       const response = await this.client.get(url, { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching organization Copilot usage:', error);
+      console.error(`Error fetching organization Copilot usage for ${orgName}:`, error);
       throw error;
     }
   }
   
-  async getTeamCopilotUsage(teamId: number, dateRange?: DateRangeFilter): Promise<CopilotTeamUsage> {
-    let url = `/teams/${teamId}/copilot/usage`;
+  async getTeamCopilotUsage(teamSlug: string, dateRange?: DateRangeFilter): Promise<CopilotTeamUsage> {
+    // In GitHub's API, team slugs are used in the URL with the organization
+    let url = `/orgs/${this.organization}/teams/${teamSlug}/copilot/usage`;
     
     // Add date range parameters if provided
     const params: Record<string, string> = {};
@@ -54,36 +59,27 @@ export class GitHubApiRepository implements GitHubRepository {
     }
     
     try {
+      console.log(`Fetching Copilot usage for team: ${teamSlug} in org: ${this.organization}`);
       const response = await this.client.get(url, { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching team Copilot usage:', error);
+      console.error(`Error fetching team Copilot usage for ${teamSlug}:`, error);
       throw error;
     }
   }
   
-  async getUserOrganizations(): Promise<{ id: number; login: string; }[]> {
+  async getOrganizationTeams(): Promise<{ id: string; slug: string; name: string; }[]> {
     try {
-      const response = await this.client.get('/user/orgs');
-      return response.data.map((org: any) => ({
-        id: org.id,
-        login: org.login
-      }));
-    } catch (error) {
-      console.error('Error fetching user organizations:', error);
-      throw error;
-    }
-  }
-  
-  async getOrganizationTeams(orgName: string): Promise<{ id: number; name: string; }[]> {
-    try {
-      const response = await this.client.get(`/orgs/${orgName}/teams`);
+      console.log(`Fetching teams for organization: ${this.organization}`);
+      const response = await this.client.get(`/orgs/${this.organization}/teams`);
+      
       return response.data.map((team: any) => ({
         id: team.id,
+        slug: team.slug,
         name: team.name
       }));
     } catch (error) {
-      console.error(`Error fetching teams for org ${orgName}:`, error);
+      console.error(`Error fetching teams for organization ${this.organization}:`, error);
       throw error;
     }
   }

@@ -2,8 +2,10 @@ import { CopilotOrgUsage, CopilotTeamUsage } from '../../../domain/entities/gith
 import { DateRangeFilter, GitHubRepository } from '../../../domain/repositories/github/GitHubRepository';
 
 export class MockGitHubRepository implements GitHubRepository {
-  async getOrganizationCopilotUsage(orgName: string, dateRange?: DateRangeFilter): Promise<CopilotOrgUsage> {
+  async getOrganizationCopilotUsage(orgName?: string, dateRange?: DateRangeFilter): Promise<CopilotOrgUsage> {
     // Generate mock data that resembles real GitHub Copilot usage data
+    console.log(`[MOCK] Fetching organization Copilot usage for: ${orgName || 'default org'}`);
+    
     const now = new Date();
     const start = dateRange?.startDate || new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Default to 30 days ago
     const end = dateRange?.endDate || now;
@@ -94,7 +96,7 @@ export class MockGitHubRepository implements GitHubRepository {
     const totalAccepted = userStats.reduce((sum, user) => sum + user.suggestions.accepted, 0);
     
     return {
-      org: orgName,
+      org: orgName || 'mock-organization',
       total_users_with_access: activeUsers.length + inactiveUsers.length,
       active_users: activeUsers,
       inactive_users: inactiveUsers,
@@ -114,9 +116,11 @@ export class MockGitHubRepository implements GitHubRepository {
     };
   }
   
-  async getTeamCopilotUsage(teamId: number, dateRange?: DateRangeFilter): Promise<CopilotTeamUsage> {
-    // Generate a smaller dataset for team usage
-    const orgData = await this.getOrganizationCopilotUsage(`team-${teamId}-org`, dateRange);
+  async getTeamCopilotUsage(teamSlug: string, dateRange?: DateRangeFilter): Promise<CopilotTeamUsage> {
+    // Generate mock data for team usage
+    console.log(`[MOCK] Fetching team Copilot usage for: ${teamSlug}`);
+    
+    const orgData = await this.getOrganizationCopilotUsage('mock-org', dateRange);
     
     // Use a subset of the organization data for team
     const activeMembers = orgData.active_users.slice(0, 5);
@@ -142,8 +146,9 @@ export class MockGitHubRepository implements GitHubRepository {
     );
     
     return {
-      team_id: teamId,
-      team_name: `Team ${teamId}`,
+      team_id: 101,
+      team_name: teamSlug || 'Mock Team',
+      team_slug: teamSlug || 'mock-team',
       total_members_with_access: activeMembers.length + inactiveMembers.length,
       active_members: activeMembers,
       inactive_members: inactiveMembers,
@@ -163,21 +168,16 @@ export class MockGitHubRepository implements GitHubRepository {
     };
   }
   
-  async getUserOrganizations(): Promise<{ id: number; login: string; }[]> {
+  async getOrganizationTeams(): Promise<{ id: string; slug: string; name: string; }[]> {
+    // Generate mock team data
+    console.log('[MOCK] Fetching teams for organization');
+    
     return [
-      { id: 1, login: 'acme-corp' },
-      { id: 2, login: 'open-source-org' },
-      { id: 3, login: 'demo-company' }
-    ];
-  }
-  
-  async getOrganizationTeams(orgName: string): Promise<{ id: number; name: string; }[]> {
-    return [
-      { id: 101, name: 'Engineering' },
-      { id: 102, name: 'Design' },
-      { id: 103, name: 'Product' },
-      { id: 104, name: 'Platform' },
-      { id: 105, name: 'DevOps' }
+      { id: '101', slug: 'engineering', name: 'Engineering' },
+      { id: '102', slug: 'design', name: 'Design' },
+      { id: '103', slug: 'product', name: 'Product' },
+      { id: '104', slug: 'platform', name: 'Platform' },
+      { id: '105', slug: 'devops', name: 'DevOps' }
     ];
   }
 }
