@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GitHubCopilotService } from '@/application/services/github/GitHubCopilotService';
-import { MockGitHubRepository } from '@/infrastructure/repositories/github/MockGitHubRepository';
-// import { GitHubApiRepository } from '@/infrastructure/repositories/github/GitHubApiRepository';
+import { gitHubCopilotService } from '@/app/api/providers/dataProviders';
 import { z } from 'zod';
-
-// Initialize service with mock repository for development
-// In production, use the real API repository with a token
-// const gitHubRepo = new GitHubApiRepository(process.env.GITHUB_API_TOKEN || '');
-const gitHubRepo = new MockGitHubRepository();
-const gitHubCopilotService = new GitHubCopilotService(gitHubRepo);
 
 // Schema for validating query parameters
 const QuerySchema = z.object({
@@ -43,6 +35,8 @@ export async function GET(req: NextRequest, { params }: Params) {
         }
       : undefined;
     
+    console.log(`Fetching Copilot usage for org ${org} with date range:`, dateRange);
+    
     // Get Copilot usage data
     const usageData = await gitHubCopilotService.getOrganizationCopilotUsage(org, dateRange);
     
@@ -63,9 +57,18 @@ export async function GET(req: NextRequest, { params }: Params) {
       );
     }
     
+    let errorMessage = 'Failed to fetch Copilot usage data';
+    let statusCode = 500;
+    
+    // Handle specific API errors
+    if (error.response) {
+      errorMessage = `GitHub API error: ${error.response.data?.message || 'Unknown error'}`;
+      statusCode = error.response.status;
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to fetch Copilot usage data' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     );
   }
 }

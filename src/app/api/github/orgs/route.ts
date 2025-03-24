@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MockGitHubRepository } from '@/infrastructure/repositories/github/MockGitHubRepository';
-// import { GitHubApiRepository } from '@/infrastructure/repositories/github/GitHubApiRepository';
-
-// Initialize repository
-// In production, use the real API repository with a token
-// const gitHubRepo = new GitHubApiRepository(process.env.GITHUB_API_TOKEN || '');
-const gitHubRepo = new MockGitHubRepository();
+import { gitHubCopilotService } from '@/app/api/providers/dataProviders';
 
 export async function GET(req: NextRequest) {
   try {
-    const organizations = await gitHubRepo.getUserOrganizations();
+    console.log('Fetching GitHub organizations');
+    
+    const organizations = await gitHubCopilotService.getUserOrganizations();
     
     return NextResponse.json({ organizations });
   } catch (error) {
     console.error('Error fetching organizations:', error);
     
+    let errorMessage = 'Failed to fetch organizations';
+    let statusCode = 500;
+    
+    // Handle specific API errors
+    if (error.response) {
+      errorMessage = `GitHub API error: ${error.response.data?.message || 'Unknown error'}`;
+      statusCode = error.response.status;
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to fetch organizations' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     );
   }
 }

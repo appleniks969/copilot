@@ -9,56 +9,82 @@ export class GitHubApiRepository implements GitHubRepository {
     this.client = axios.create({
       baseURL: 'https://api.github.com',
       headers: {
-        Authorization: `token ${apiToken}`,
-        Accept: 'application/vnd.github.v3+json',
+        Authorization: `Bearer ${apiToken}`,
+        Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
       },
     });
   }
   
   async getOrganizationCopilotUsage(orgName: string, dateRange?: DateRangeFilter): Promise<CopilotOrgUsage> {
-    let url = `/copilot/usage/orgs/${orgName}`;
+    let url = `/orgs/${orgName}/copilot/usage`;
     
     // Add date range parameters if provided
+    const params: Record<string, string> = {};
     if (dateRange) {
-      const params = new URLSearchParams();
-      params.append('start_time', dateRange.startDate.toISOString());
-      params.append('end_time', dateRange.endDate.toISOString());
-      url += `?${params.toString()}`;
+      if (dateRange.startDate) {
+        params.start_time = dateRange.startDate.toISOString();
+      }
+      if (dateRange.endDate) {
+        params.end_time = dateRange.endDate.toISOString();
+      }
     }
     
-    const response = await this.client.get(url);
-    return response.data;
+    try {
+      const response = await this.client.get(url, { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching organization Copilot usage:', error);
+      throw error;
+    }
   }
   
   async getTeamCopilotUsage(teamId: number, dateRange?: DateRangeFilter): Promise<CopilotTeamUsage> {
-    let url = `/copilot/usage/teams/${teamId}`;
+    let url = `/teams/${teamId}/copilot/usage`;
     
     // Add date range parameters if provided
+    const params: Record<string, string> = {};
     if (dateRange) {
-      const params = new URLSearchParams();
-      params.append('start_time', dateRange.startDate.toISOString());
-      params.append('end_time', dateRange.endDate.toISOString());
-      url += `?${params.toString()}`;
+      if (dateRange.startDate) {
+        params.start_time = dateRange.startDate.toISOString();
+      }
+      if (dateRange.endDate) {
+        params.end_time = dateRange.endDate.toISOString();
+      }
     }
     
-    const response = await this.client.get(url);
-    return response.data;
+    try {
+      const response = await this.client.get(url, { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching team Copilot usage:', error);
+      throw error;
+    }
   }
   
   async getUserOrganizations(): Promise<{ id: number; login: string; }[]> {
-    const response = await this.client.get('/user/orgs');
-    return response.data.map((org: any) => ({
-      id: org.id,
-      login: org.login
-    }));
+    try {
+      const response = await this.client.get('/user/orgs');
+      return response.data.map((org: any) => ({
+        id: org.id,
+        login: org.login
+      }));
+    } catch (error) {
+      console.error('Error fetching user organizations:', error);
+      throw error;
+    }
   }
   
   async getOrganizationTeams(orgName: string): Promise<{ id: number; name: string; }[]> {
-    const response = await this.client.get(`/orgs/${orgName}/teams`);
-    return response.data.map((team: any) => ({
-      id: team.id,
-      name: team.name
-    }));
+    try {
+      const response = await this.client.get(`/orgs/${orgName}/teams`);
+      return response.data.map((team: any) => ({
+        id: team.id,
+        name: team.name
+      }));
+    } catch (error) {
+      console.error(`Error fetching teams for org ${orgName}:`, error);
+      throw error;
+    }
   }
 }

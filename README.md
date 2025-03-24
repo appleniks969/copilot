@@ -1,77 +1,32 @@
-# Enhanced GitHub Copilot Metrics Dashboard
+# GitHub Copilot Metrics Dashboard
 
-A powerful, extensible metrics visualization dashboard built with Next.js, TypeScript, and a domain-driven design architecture. This project provides comprehensive analytics for GitHub Copilot usage across your organization and teams.
+A powerful, data-driven dashboard for tracking GitHub Copilot usage across your organization using the official GitHub API.
 
 ## Features
 
-- **GitHub Copilot Analytics**: Track Copilot usage, acceptance rates, and productivity metrics across your organization and teams
-- **Domain-Driven Design Architecture**: Clear separation of concerns with domain entities, application services, and infrastructure layers
-- **Interactive Dashboards**: Customizable dashboards with multiple visualization types
-- **Comprehensive Analytics**: Detailed insights into user activity, repository usage, and suggestion acceptance rates
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
-- **Dark Mode Support**: Automatic dark mode based on system preferences
-- **Filtering and Searching**: Filter data by organization, team, and date range
-- **API-First Approach**: RESTful API for integrating with external systems
+- **Real-time Copilot Usage Data**: Integrates with GitHub's official Copilot usage API
+- **Organization-wide Analytics**: View usage patterns across your entire organization
+- **Team-specific Insights**: Analyze how different teams are using Copilot
+- **User Activity Tracking**: See which users are actively using Copilot and their efficiency
+- **Repository Analysis**: Identify which repositories benefit most from Copilot
+- **Interactive UI**: Filter by date ranges, organizations, and teams
 
-## GitHub Copilot Dashboard
+## API Integration
 
-The GitHub Copilot dashboard provides insights into how your organization is using GitHub Copilot, including:
+This dashboard integrates with the GitHub API to fetch real Copilot usage data:
 
-- **Organization Overview**: View organization-wide Copilot usage metrics
-- **Team View**: Analyze Copilot usage within specific teams
-- **User Activity**: Track active and inactive Copilot users
-- **Repository Usage**: See which repositories are getting the most benefit from Copilot
-- **Acceptance Rate Analysis**: Identify which users and repositories have the highest suggestion acceptance rates
-- **Trend Analysis**: Track changes in Copilot usage over time
+- [Copilot Usage for Organization Members API](https://docs.github.com/en/rest/copilot/copilot-usage?apiVersion=2022-11-28#get-a-summary-of-copilot-usage-for-organization-members)
+- [Copilot Usage for Team API](https://docs.github.com/en/rest/copilot/copilot-usage?apiVersion=2022-11-28#get-a-summary-of-copilot-usage-for-a-team)
 
-## Project Structure
-
-The project follows a clean architecture pattern with well-defined layers:
-
-```
-metrics-dashboard/
-├── src/
-│   ├── domain/             # Core domain entities and repository interfaces
-│   │   ├── entities/       # Domain models (Metric, Dashboard, User, GitHub)
-│   │   └── repositories/   # Repository interfaces
-│   │
-│   ├── application/        # Application services and business logic
-│   │   └── services/       # Services implementing domain logic
-│   │
-│   ├── infrastructure/     # Repository implementations and external concerns
-│   │   └── repositories/   # Concrete implementations of repositories
-│   │
-│   ├── presentation/       # UI components and presentation logic
-│   │   └── components/     # React components
-│   │       ├── dashboard/  # Dashboard-related components
-│   │       ├── github/     # GitHub-specific components
-│   │       ├── layout/     # Layout components
-│   │       └── metrics/    # Metrics-related components
-│   │
-│   └── app/                # Next.js app router pages and API routes
-│       ├── api/            # API routes
-│       ├── dashboard/      # Dashboard pages
-│       ├── github/         # GitHub Copilot pages
-│       └── metrics/        # Metrics pages
-│
-├── public/                 # Static assets
-└── ...config files
-```
-
-## Technologies Used
-
-- **Next.js**: React framework with server-side rendering and API routes
-- **TypeScript**: Type safety and better developer experience
-- **Tailwind CSS**: Utility-first CSS framework for styling
-- **Zod**: Schema validation for API requests and responses
+For detailed setup instructions, see [SETUP.md](./SETUP.md).
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18.x or newer
-- npm or yarn
-- GitHub access token (for production use)
+- Node.js 16.x or newer
+- GitHub account with admin access to an organization using Copilot
+- Personal Access Token with appropriate permissions (see Setup Guide)
 
 ### Installation
 
@@ -84,69 +39,63 @@ metrics-dashboard/
 2. Install dependencies
    ```
    npm install
-   # or
-   yarn install
    ```
 
-3. Copy the environment example file and update it with your GitHub API token
+3. Create your configuration
    ```
    cp .env.example .env.local
    ```
+   Then edit `.env.local` to add your GitHub API token.
 
 4. Run the development server
    ```
    npm run dev
-   # or
-   yarn dev
    ```
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## GitHub API Integration
+## Dashboard Overview
 
-The dashboard integrates with the GitHub Copilot API to fetch usage data. To use it with your GitHub organization:
+### Main Dashboard
+The main dashboard provides an at-a-glance view of your organization's Copilot usage, including:
 
-1. Generate a GitHub Personal Access Token with the following permissions:
-   - `copilot:read`
-   - `org:read`
-   - `read:org`
+- Active vs. inactive user counts
+- Suggestion acceptance rates
+- Total suggestions generated
+- Most active repositories
+- Usage trends over time
 
-2. Add the token to your `.env.local` file:
-   ```
-   GITHUB_API_TOKEN=your_github_personal_access_token
-   ```
-
-By default, the dashboard uses mock data for development. To use real GitHub API data, set:
-```
-NEXT_PUBLIC_ENABLE_MOCK_API=false
-```
-
-## Key Use Cases
-
-### Organization-wide Copilot Usage Monitoring
-
-- Track the overall adoption of Copilot across your organization
-- Identify teams and repositories with the highest Copilot usage
-- Monitor acceptance rates to gauge effectiveness
-
-### Team-specific Analysis
-
-- Compare Copilot usage across different teams
-- Identify teams that might need additional training or support
-- Track team performance over time
-
-### User Activity Monitoring
+### User Activity
+The Users view allows you to:
 
 - See which users are actively using Copilot
-- Identify top performers with high acceptance rates
-- Find inactive users who may need assistance or training
+- Track individual acceptance rates
+- Identify power users and those who might need training
+- Monitor usage patterns by user
 
-### Repository Analysis
+### Repository Analytics
+The Repositories view shows:
 
-- Understand which repositories benefit most from Copilot
-- Identify codebases where Copilot is less effective
-- Optimize your investment by focusing on high-impact areas
+- Which codebases benefit most from Copilot
+- Acceptance rates by repository
+- Most active repositories
+- Opportunities for increased adoption
+
+## Technology Stack
+
+- **Next.js**: React framework for server-rendered applications
+- **TypeScript**: Type-safe JavaScript
+- **Tailwind CSS**: Utility-first CSS framework
+- **Domain-Driven Design**: Clean architecture separating business logic from infrastructure
+- **GitHub API**: Real-time data from GitHub's official API
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- GitHub for providing the Copilot usage API
+- Microsoft for the original Copilot Metrics Dashboard concept
+
+For detailed setup instructions, particularly for GitHub API integration, see [SETUP.md](./SETUP.md).
